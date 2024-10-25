@@ -72,9 +72,10 @@ func TestGeneratePreview_Success(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodGet, "https://example.com", http.NoBody)
 
-	result, err := svc.GeneratePreview(req, 50, 50, "https://example.com/image.jpg")
+	result, contentType, err := svc.GeneratePreview(req, 50, 50, "https://example.com/image.jpg")
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
+	assert.Equal(t, "image/jpeg", contentType, "content type should match the source image")
 
 	cache.AssertExpectations(t)
 	client.AssertExpectations(t)
@@ -92,9 +93,10 @@ func TestGeneratePreview_CacheHit(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodGet, "https://example.com", http.NoBody)
 
-	result, err := svc.GeneratePreview(req, 50, 50, "https://example.com/image.jpg")
+	result, contentType, err := svc.GeneratePreview(req, 50, 50, "https://example.com/image.jpg")
 	assert.NoError(t, err)
 	assert.Equal(t, []byte("cached image data"), result)
+	assert.Equal(t, "", contentType, "content type should be empty for cache hit")
 
 	client.AssertNotCalled(t, "Do", mock.Anything)
 	cache.AssertExpectations(t)
@@ -119,7 +121,7 @@ func TestGeneratePreview_UnsupportedContentType(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodGet, "https://example.com", http.NoBody)
 
-	_, err := svc.GeneratePreview(req, 50, 50, "https://example.com/image.gif")
+	_, _, err := svc.GeneratePreview(req, 50, 50, "https://example.com/image.gif")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "unsupported content type")
 
@@ -141,7 +143,7 @@ func TestGeneratePreview_DownloadError(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodGet, "https://example.com", http.NoBody)
 
-	_, err := svc.GeneratePreview(req, 50, 50, "https://example.com/image.jpg")
+	_, _, err := svc.GeneratePreview(req, 50, 50, "https://example.com/image.jpg")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "download error")
 

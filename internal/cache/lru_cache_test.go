@@ -23,7 +23,7 @@ func TestLRUCache_SetAndGet(t *testing.T) {
 	assert.True(t, ok)
 	assert.Equal(t, []byte("image1"), value)
 
-	path := filepath.Join(tempDir, "key1.jpg")
+	path := filepath.Join(tempDir, "key1")
 	_, err = os.Stat(path)
 	assert.NoError(t, err)
 }
@@ -46,7 +46,7 @@ func TestLRUCache_RemoveLRU(t *testing.T) {
 	_, ok := c.Get("key1")
 	assert.False(t, ok)
 
-	path := filepath.Join(tempDir, "key1.jpg")
+	path := filepath.Join(tempDir, "key1")
 	_, err = os.Stat(path)
 	assert.True(t, os.IsNotExist(err))
 
@@ -69,7 +69,7 @@ func TestLRUCache_FileOperations(t *testing.T) {
 	err := c.Set("key1", []byte("image1"))
 	require.NoError(t, err)
 
-	path := filepath.Join(tempDir, "key1.jpg")
+	path := filepath.Join(tempDir, "key1")
 	_, err = os.Stat(path)
 	assert.NoError(t, err)
 
@@ -78,4 +78,8 @@ func TestLRUCache_FileOperations(t *testing.T) {
 
 	_, err = os.Stat(path)
 	assert.True(t, os.IsNotExist(err))
+
+	newPath := filepath.Join(tempDir, "key2")
+	_, err = os.Stat(newPath)
+	assert.NoError(t, err)
 }

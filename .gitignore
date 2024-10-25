@@ -5,9 +5,6 @@
 *.dll
 *.so
 *.dylib
-go-cp
-go-envdir
-go-telnet
 
 # Test binary, build with `go test -c`
 *.test

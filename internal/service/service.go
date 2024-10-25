@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"image"
 	"image/jpeg"
-	"io"
+	"image/png"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -37,14 +37,13 @@ func NewService(cache Cache) *Service {
 }
 
 // GeneratePreview скачивает изображение, изменяет его размеры и сохраняет в кэш.
-func (s *Service) GeneratePreview(req *http.Request, width, height int, imageURL string) ([]byte, error) {
-	escapedImageURL := url.PathEscape(imageURL)
-	key := fmt.Sprintf("%d_%d_%s", width, height, escapedImageURL)
+func (s *Service) GeneratePreview(req *http.Request, width, height int, imageURL string) ([]byte, string, error) {
+	key := fmt.Sprintf("%d_%d_%s", width, height, url.QueryEscape(imageURL))
 
 	// Check the cache
 	if data, ok := s.Cache.Get(key); ok {
 		slog.Debug("cache hit for key", "key", key)
-		return data, nil
+		return data, "", nil
 	}
 
 	slog.Debug("cache miss", "key", key)
@@ -52,7 +51,7 @@ func (s *Service) GeneratePreview(req *http.Request, width, height int, imageURL
 	// Prepare the request for the image with metadata from the client request.
 	clientReq, err := http.NewRequestWithContext(req.Context(), http.MethodGet, imageURL, http.NoBody)
 	if err != nil {
-		return nil, fmt.Errorf("error creating request for image: %w", err)
+		return nil, "", fmt.Errorf("error creating request for image: %w", err)
 	}
 
 	// Copy relevant headers from the original request.
@@ -64,7 +63,7 @@ func (s *Service) GeneratePreview(req *http.Request, width, height int, imageURL
 
 	resp, err := s.Client.Do(clientReq)
 	if err != nil {
-		return nil, fmt.Errorf("error downloading image: %w", err)
+		return nil, "", fmt.Errorf("error downloading image: %w", err)
 	}
 
 	defer func() {
@@ -74,38 +73,41 @@ func (s *Service) GeneratePreview(req *http.Request, width, height int, imageURL
 	}()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("remote server returned status: %d", resp.StatusCode)
+		return nil, "", fmt.Errorf("remote server returned status: %d", resp.StatusCode)
 	}
 
 	contentType := resp.Header.Get("Content-Type")
-	if contentType != "image/jpeg" && contentType != "image/jpg" && contentType != "image/png" {
-		return nil, fmt.Errorf("unsupported content type: %s", contentType)
+	if contentType != "image/png" && contentType != "image/jpeg" && contentType != "image/jpg" {
+		return nil, "", fmt.Errorf("unsupported content type: %s", contentType)
 	}
 
-	imgData, err := io.ReadAll(resp.Body)
+	img, _, err := image.Decode(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("error reading image data: %w", err)
-	}
-
-	img, _, err := image.Decode(bytes.NewReader(imgData))
-	if err != nil {
-		return nil, fmt.Errorf("error decoding image: %w", err)
+		return nil, "", fmt.Errorf("error decoding image: %w", err)
 	}
 
 	preview := imaging.Resize(img, width, height, imaging.Lanczos)
 
 	var buf bytes.Buffer
-	if err = jpeg.Encode(&buf, preview, nil); err != nil {
-		return nil, fmt.Errorf("error while encoding preview: %w", err)
+
+	switch contentType {
+	case "image/png":
+		if err = png.Encode(&buf, preview); err != nil {
+			return nil, "", fmt.Errorf("error while encoding PNG preview: %w", err)
+		}
+	case "image/jpeg", "image/jpg":
+		if err = jpeg.Encode(&buf, preview, nil); err != nil {
+			return nil, "", fmt.Errorf("error while encoding JPEG preview: %w", err)
+		}
 	}
 
 	previewData := buf.Bytes()
 
 	if err = s.Cache.Set(key, previewData); err != nil {
-		return nil, fmt.Errorf("error while caching image: %w", err)
+		return nil, "", fmt.Errorf("error while caching image: %w", err)
 	}
 
 	slog.Debug("preview successfully generated and cached", "key", key)
 
-	return previewData, nil
+	return previewData, contentType, nil
 }

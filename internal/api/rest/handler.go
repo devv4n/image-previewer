@@ -4,7 +4,6 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
-	"strings"
 )
 
 // PreviewHandler обрабатывает запросы на генерацию и получение превью.
@@ -24,15 +23,7 @@ func (s *Server) PreviewHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !strings.HasPrefix(imageURL, "https://") {
-		if strings.HasPrefix(imageURL, "nginx:80") {
-			imageURL = "http://" + imageURL
-		} else {
-			imageURL = "https://" + imageURL
-		}
-	}
-
-	previewData, err := s.Service.GeneratePreview(r, width, height, imageURL)
+	previewData, contentType, err := s.Service.GeneratePreview(r, width, height, imageURL)
 	if err != nil {
 		slog.Error("Error generating preview", "error", err, "imageURL", imageURL)
 		http.Error(w, "Error while generating preview", http.StatusBadGateway)
@@ -40,7 +31,7 @@ func (s *Server) PreviewHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "image/jpeg")
+	w.Header().Set("Content-Type", contentType)
 	w.Header().Set("Content-Length", strconv.Itoa(len(previewData)))
 
 	if _, err = w.Write(previewData); err != nil {

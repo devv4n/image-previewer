@@ -54,6 +54,4 @@ func main() {
 		slog.Error("error stopping server", "error", err)
 		os.Exit(1)
 	}
-
-	os.Exit(0)
 }

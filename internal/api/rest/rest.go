@@ -18,6 +18,8 @@ type Server struct {
 	server  *http.Server
 }
 
+const DefaultReadHeaderTimeout = 5 * time.Second
+
 // NewServer создаёт новый server.
 func NewServer(s *service.Service, cfg *config.Config) *Server {
 	return &Server{Service: s, Config: cfg}
@@ -31,7 +33,7 @@ func (s *Server) Serve() {
 	s.server = &http.Server{
 		Addr:              fmt.Sprintf(":%d", s.Config.Port),
 		Handler:           LogMiddleware(mux),
-		ReadHeaderTimeout: 5 * time.Second,
+		ReadHeaderTimeout: DefaultReadHeaderTimeout,
 	}
 
 	slog.Info("server starting", "address", s.server.Addr)

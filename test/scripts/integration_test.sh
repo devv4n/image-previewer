@@ -22,7 +22,7 @@ for img in "$MODIFIED_IMAGES_DIR"/*; do
     width=${BASH_REMATCH[1]}
     height=${BASH_REMATCH[2]}
 
-    request_url="$BASE_URL/$width/$height/nginx:80/images/_gopher_original_1024x504.jpg"
+    request_url="$BASE_URL/$width/$height/http%3A%2F%2Fnginx%3A80%2Fimages%2F_gopher_original_1024x504.jpg"
     downloaded_image="$DOWNLOADED_IMAGES_DIR/$filename"
 
     curl -s -o "$downloaded_image" "$request_url"

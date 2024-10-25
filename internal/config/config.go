@@ -55,16 +55,22 @@ func LoadConfig(path string) (*Config, error) {
 	return &cfg, nil
 }
 
+const (
+	defaultPort      = 8080
+	defaultCacheSize = 5
+	defaultLogLevel  = "info"
+)
+
 func ValidateConfig(cfg *Config) {
 	if _, ok := levelNames[cfg.LogLvl]; !ok {
-		cfg.LogLvl = "info"
+		cfg.LogLvl = defaultLogLevel
 	}
 
 	if cfg.Port == 0 {
-		cfg.Port = 8080
+		cfg.Port = defaultPort
 	}
 
 	if cfg.CacheSize == 0 {
-		cfg.CacheSize = 5
+		cfg.CacheSize = defaultCacheSize
 	}
 }

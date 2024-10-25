@@ -27,8 +27,6 @@ docker.run:
 docker.clean:
 	docker rm -f $(APP_SERVICE) || true
 	docker rmi $(APP_SERVICE):latest || true
-	go clean
-	rm -rf bin
 
 lint:
 	golangci-lint run -v ./...

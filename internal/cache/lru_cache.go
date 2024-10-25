@@ -9,8 +9,8 @@ import (
 
 var PreviewDir string
 
-// LruCache реализация LRU кэша.
-type LruCache struct {
+// LRUCache реализация LRU кэша.
+type LRUCache struct {
 	capacity int
 	cache    map[string]*node
 	head     *node
@@ -27,18 +27,18 @@ type node struct {
 }
 
 // NewLRUCache создаёт новый LRU кэш.
-func NewLRUCache(capacity int) *LruCache {
+func NewLRUCache(capacity int) *LRUCache {
 	if PreviewDir == "" {
 		PreviewDir = "./previews"
 	}
 
-	return &LruCache{
+	return &LRUCache{
 		capacity: capacity,
 		cache:    make(map[string]*node),
 	}
 }
 
-func (c *LruCache) Get(key string) ([]byte, bool) {
+func (c *LRUCache) Get(key string) ([]byte, bool) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
@@ -51,7 +51,7 @@ func (c *LruCache) Get(key string) ([]byte, bool) {
 	return nil, false
 }
 
-func (c *LruCache) Set(key string, value []byte) error {
+func (c *LRUCache) Set(key string, value []byte) error {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
@@ -62,29 +62,28 @@ func (c *LruCache) Set(key string, value []byte) error {
 		return nil
 	}
 
+	if len(c.cache) >= c.capacity {
+		if err := c.removeLRU(); err != nil {
+			return fmt.Errorf("error removing preview from disk: %w", err)
+		}
+	}
+
 	n := &node{
 		key:   key,
 		value: value,
 	}
 
-	c.cache[key] = n
-
 	if err := c.saveToDisk(key, value); err != nil {
 		return fmt.Errorf("error saving preview to disk: %w", err)
 	}
 
+	c.cache[key] = n
 	c.addToFront(n)
-
-	if len(c.cache) > c.capacity {
-		if err := c.removeLRU(); err != nil {
-			return fmt.Errorf("error remove preview from disk: %w", err)
-		}
-	}
 
 	return nil
 }
 
-func (c *LruCache) moveToFront(n *node) {
+func (c *LRUCache) moveToFront(n *node) {
 	if c.head == n {
 		return
 	}
@@ -93,7 +92,7 @@ func (c *LruCache) moveToFront(n *node) {
 	c.addToFront(n)
 }
 
-func (c *LruCache) addToFront(n *node) {
+func (c *LRUCache) addToFront(n *node) {
 	n.next = c.head
 	n.prev = nil
 
@@ -108,7 +107,7 @@ func (c *LruCache) addToFront(n *node) {
 	}
 }
 
-func (c *LruCache) remove(n *node) {
+func (c *LRUCache) remove(n *node) {
 	if n.prev != nil {
 		n.prev.next = n.next
 	} else {
@@ -122,7 +121,7 @@ func (c *LruCache) remove(n *node) {
 	}
 }
 
-func (c *LruCache) removeLRU() error {
+func (c *LRUCache) removeLRU() error {
 	if c.tail != nil {
 		if err := c.deleteFromDisk(c.tail.key); err != nil {
 			return err
@@ -137,18 +136,18 @@ func (c *LruCache) removeLRU() error {
 	return nil
 }
 
-func (c *LruCache) saveToDisk(key string, data []byte) error {
+func (c *LRUCache) saveToDisk(key string, data []byte) error {
 	if err := os.MkdirAll(PreviewDir, 0o750); err != nil {
 		return fmt.Errorf("error creating preview directory: %w", err)
 	}
 
-	path := filepath.Join(PreviewDir, key+".jpg")
+	path := filepath.Join(PreviewDir, key)
 
 	return os.WriteFile(path, data, 0o600)
 }
 
-func (c *LruCache) deleteFromDisk(key string) error {
-	path := filepath.Join(PreviewDir, key+".jpg")
+func (c *LRUCache) deleteFromDisk(key string) error {
+	path := filepath.Join(PreviewDir, key)
 
 	if err := os.Remove(path); err != nil {
 		return fmt.Errorf("error deleting file from disk key:%s, err:%w", key, err)
