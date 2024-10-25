@@ -1,0 +1,23 @@
+services:
+  image-previewer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "8081:80"
+    volumes:
+      - ./test/nginx.conf:/etc/nginx/nginx.conf
+      - ./test/images/_gopher_original_1024x504.jpg:/usr/share/nginx/html/images/_gopher_original_1024x504.jpg
+
+  tester:
+    build:
+      context: test
+      dockerfile: Dockerfile.bash
+    depends_on:
+      - image-previewer
+      - nginx
