@@ -1,0 +1,5 @@
+{
+  "port": 3003,
+  "log_level": "debug",
+  "cache_size": 3
+}
