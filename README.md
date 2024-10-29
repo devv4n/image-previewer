@@ -1,8 +1,8 @@
 # Image Previewer
 
 ![GitHub Actions](https://img.shields.io/github/actions/workflow/status/devv4n/image-previewer/ci.yml?branch=main)
-![GitHub Release](https://img.shields.io/github/release/devv4n/image-previewer.svg)
-![Go Report Card](https://goreportcard.com/badge/github.com/devv4n/image-previewer)
+![GitHub Release](https://img.shields.io/github/release/devv4n/image-previewer)
+[![Go Report Card](https://goreportcard.com/badge/github.com/devv4n/image-previewer)](https://goreportcard.com/report/github.com/devv4n/image-previewer)
 ![Go Version](https://img.shields.io/badge/Go-1.23%2B-blue)
 
 ## Описание
